@@ -1,0 +1,45 @@
+<div class="well well-sm">
+  <div class="row buttons">
+    <div class="col-md-12">
+      <span class="pull-right"><a class="btn btn-sm btn-success" data-template="views/createNetwork.html" bs-modal><i class="glyphicon glyphicon-plus-sign"></i> Create Network</abbr></a></span>
+    </div>
+  </div>
+  <div class="row">
+    <h3 style="margin-left: 10px">Network Configuration</h3>
+    <div class="col-md-12">
+      <p>Network Utilization</p>
+      <div class="progress">
+        <div class="progress-bar" role="progressbar" aria-valuenow="{{network.utilization}}" aria-valuemin="0" aria-valuemax="100" style="width: {{network.utilization}}%">
+          <span class="sr-only">{{network.utilization}}%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <table class="table table-hover">
+    <thead>
+      <tr><th>VLAN</th><th>Container</th><th>Actions</th></tr>
+    </thead>
+
+    <tbody ng-repeat-start="bridge in bridges">
+      <tr>
+        <td colspan="2"><i class="glyphicon" ng-class="{'glyphicon-menu-right': !bridge.expanded, 'glyphicon-menu-down': bridge.expanded}" ng-click="bridge.expanded = bridge.expanded ? false : true"></i>&nbsp;{{bridge.name}}</td>
+        <td>
+          <a class="pull-right" href=""><i class="glyphicon glyphicon-remove-circle"></i></a>
+          <a class="pull-right" href=""><i class="glyphicon glyphicon-plus"></i></a>
+        </td>
+      </tr>
+    </tbody>
+    <tbody ng-if="bridge.expanded" ng-repeat-end>
+      <tr ng-repeat="port in bridge.ports">
+        <td>{{port.vlan}}</td>
+        <td>{{port.container}}</td>
+        <td>
+          <a class="pull-right" href=""><i class="glyphicon glyphicon-remove-circle"></i></a>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

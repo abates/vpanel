@@ -1,0 +1,16 @@
+{
+  "type": "application",
+  "name": "VirtPanel",
+  "username": "abates",
+  "ngVersion": "~1.4.0",
+  "ngModules": [
+    "animate",
+    "resource",
+    "route"
+  ],
+  "license": "Apache",
+  "htmlPreprocessor": "none",
+  "jsPreprocessor": "none",
+  "cssPreprocessor": "less",
+  "module": "VirtPanel"
+}

@@ -1,0 +1,42 @@
+
+.table tbody tr td {
+  padding: 0 8px 0 8px;
+  vertical-align: middle;
+}
+
+.table-curved {
+  border: solid #ccc 1px;
+  border-collapse: separate;
+  border-radius: 6px;
+
+  th {
+    border-bottom: 1px solid #ccc;
+  }
+
+  td {
+    border-top: 1px solid #ccc;
+    border-bottom: none;
+  }
+
+  th:first-child {
+    border-radius: 4px 0 0 0;
+  }
+
+  th:last-child {
+    border-radius: 0 4px 0 0;
+  }
+
+  th:only-child {
+    border-radius: 4px 4px 0 0;
+  }
+
+  tr:last-child td:first-child {
+    border-radius: 0 0 0 4px;
+  }
+
+  tr:last-child td:last-child {
+    border-radius: 0 0 4px 0;
+  }
+}
+
+

@@ -1,0 +1,16 @@
+{
+  "distribution": "Ubuntu 14.04",
+  "hostname": "vs1",
+  "cpu": 60,
+  "memory": {
+    "usage": 20,
+    "used": "1.4G",
+    "total": "4G"
+  },
+  "disk": {
+    "usage": 3,
+    "used": "3.4G",
+    "total": "143G"
+  },
+  "uptime": "5 days, 54 minutes"
+}

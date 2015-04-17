@@ -1,0 +1,22 @@
+<div class="well well-sm sidebar-nav hidden-xs" bs-navbar>
+  <ul class="nav-list">
+    <li class="nav-header">General</li>
+    <li ng-class="{active: $path() == '/'}">
+    <a href="#/" id="home-btn">
+      <i class="glyphicon glyphicon-home"></i> Overview
+      <i ng-if="$path() == '/'" class="glyphicon glyphicon-refresh" id="home-load" style="float:right;margin-top:3px;"></i>
+    </a>
+    </li>
+  </ul>
+  <ul class="nav-list">
+    <li class="nav-header">LXC Settings</li>
+    <li ng-class="{active: $path() == '/networking'}"><a href="#/networking"><i class="glyphicon glyphicon-globe"></i> Networking</a></li>
+    <li ng-class="{active: $path() == '/tokens'}"><a href="#/tokens"><i class="glyphicon glyphicon-lock"></i> API tokens</a></li>
+    <li ng-class="{active: $path() == '/audit'}"><a href="#/audit"><i class="glyphicon glyphicon-check"></i> Check config</a></li>
+  </ul>
+  <ul class="nav-list">
+    <li class="nav-header">System</li>
+    <li ng-class="{active: $path() == '/users'}"><a href="#/users"><i class="glyphicon glyphicon-user"></i> Users</a></li>
+    <li ng-class="{active: $path() == '/about'}"><a href="#/about"><i class="glyphicon glyphicon-info-sign"></i> About</a></li>
+  </ul>
+</div>
