@@ -77,7 +77,10 @@ gulp.task('go:proxy', function(cb) {
       logPrefix: function () {
         return this.compile('[{gray:' + new Date().toLocaleTimeString() + '}] ');
       },
-      proxy: 'localhost:' + serverPort
+      proxy: {
+        target: 'localhost:' + serverPort
+        //middleware: browserSync.getMiddleware
+      }
     }, cb);
   });
 });

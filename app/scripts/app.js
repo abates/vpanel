@@ -1,6 +1,6 @@
 'use strict';
 
-angular.module('VirtPanel', ['ngAnimate', 'ngResource', 'ngRoute'])
+angular.module('VirtPanel', ['ngAnimate', 'ngResource', 'ngRoute', 'mgcrea.ngStrap'])
 
   .constant('version', 'v0.1.0')
 

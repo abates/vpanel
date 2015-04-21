@@ -47,6 +47,12 @@
     </tr>
   </thead>
   <tbody>
+    <tr class="empty" ng-if="containers.length == 0">
+      <td colspan="6">No containers</td>
+      <td>
+        <span class="pull-right"><a class="btn btn-xs btn-success" data-template="views/create.html" bs-modal><i class="glyphicon glyphicon-plus-sign"></i> Create <abbr title="Container">CT</abbr></a></span>
+      </td>
+    </tr>
     <tr class="{{container.statClass}}" ng-repeat="container in containers">
       <td class="hidden-xs"><span class="label label-{{ container.statClass }}">{{container.stat}}</span></td>
       <td><a href="#/container/{{container.id}}" title="Click to edit {{container.name}}">{{container.name}}</a></td>

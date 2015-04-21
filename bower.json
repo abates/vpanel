@@ -16,7 +16,7 @@
     "type": "git",
     "url": "https://github.com/abates/virt-panel.git"
   },
-   "licenses": [
+  "licenses": [
     {
       "type": "Apache"
     }
@@ -26,6 +26,7 @@
     "angular-animate": "~1.4.0",
     "angular-resource": "~1.4.0",
     "angular-route": "~1.4.0",
-    "angular": "~1.4.0"
+    "angular": "~1.4.0",
+    "angular-strap": "~2.2.1"
   }
 }

@@ -1,7 +1,15 @@
+@import (reference) "../bower_components/bootstrap/less/variables.less";
 
 .table tbody tr td {
   padding: 0 8px 0 8px;
   vertical-align: middle;
+}
+
+.table tbody tr.empty {
+  background-color: @table-bg-active;
+  td {
+    padding: 10px;
+  }
 }
 
 .table-curved {
