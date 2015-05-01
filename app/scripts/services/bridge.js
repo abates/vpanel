@@ -2,12 +2,12 @@
 
 /**
  * @ngdoc service
- * @name VirtPanel.bridge
+ * @name virtPanel.bridge
  * @description
  * # bridge
- * Factory in the VirtPanel.
+ * Factory in the virtPanel.
  */
-angular.module('VirtPanel')
+angular.module('virtPanel')
   .factory('Bridge', ['$resource', function ($resource) {
     var Bridge = $resource('bridge_:id.json', {}, {
       query: {method: 'GET', url: 'bridges.json', isArray: true}

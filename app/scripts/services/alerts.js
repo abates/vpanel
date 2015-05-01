@@ -2,12 +2,12 @@
 
 /**
  * @ngdoc service
- * @name VirtPanel.alert
+ * @name virtPanel.alert
  * @description
  * # alert
- * Factory in the VirtPanel.
+ * Factory in the virtPanel.
  */
-angular.module('VirtPanel')
+angular.module('virtPanel')
   .factory('alerts', ['$timeout', function ($timeout) {
     var autoDismiss = null;
     var alerts = [];

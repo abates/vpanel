@@ -2,12 +2,12 @@
 
 /**
  * @ngdoc service
- * @name VirtPanel.Host
+ * @name virtPanel.Host
  * @description
  * # Host
- * Factory in the VirtPanel.
+ * Factory in the virtPanel.
  */
-angular.module('VirtPanel')
+angular.module('virtPanel')
   .factory('Host', [ '$resource', function ($resource) {
     return $resource('host.json');
   }]);

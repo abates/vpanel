@@ -2,12 +2,12 @@
 
 /**
  * @ngdoc function
- * @name VirtPanel.controller:MainCtrl
+ * @name virtPanel.controller:MainCtrl
  * @description
  * # MainCtrl
- * Controller of the VirtPanel
+ * Controller of the virtPanel
  */
-angular.module('VirtPanel')
+angular.module('virtPanel')
   .controller('MainCtrl', ['$scope', '$location', function ($scope, $location) {
     $scope.$path = function() {
       return $location.path()

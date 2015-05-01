@@ -2,12 +2,12 @@
 
 /**
  * @ngdoc service
- * @name VirtPanel.Container
+ * @name virtPanel.Container
  * @description
  * # Container
- * Factory in the VirtPanel.
+ * Factory in the virtPanel.
  */
-angular.module('VirtPanel')
+angular.module('virtPanel')
   .factory('Container', ['$resource', 'alerts', function ($resource, alerts) {
     var Container = $resource('containers/:id.json', {}, {
       query: {method: 'GET', url: 'containers.json', isArray: true}
