@@ -2,13 +2,13 @@
 
 /**
  * @ngdoc function
- * @name virtPanel.controller:NetworkingCtrl
+ * @name virtPanel.controller:NetworkingController
  * @description
- * # NetworkingCtrl
+ * # NetworkingController
  * Controller of the virtPanel
  */
 angular.module('virtPanel')
-  .controller('NetworkingCtrl', ['$scope', 'Bridge', function ($scope, Bridge) {
+  .controller('NetworkingController', ['$scope', 'Bridge', function ($scope, Bridge) {
     $scope.network = {
       utilization: 20
     };

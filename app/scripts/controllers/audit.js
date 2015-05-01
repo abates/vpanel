@@ -2,13 +2,13 @@
 
 /**
  * @ngdoc function
- * @name virtPanel.controller:AuditCtrl
+ * @name virtPanel.controller:AuditController
  * @description
- * # AuditCtrl
+ * # AuditController
  * Controller of the virtPanel
  */
 angular.module('virtPanel')
-  .controller('AuditCtrl', function ($scope) {
+  .controller('AuditController', function ($scope) {
     $scope.awesomeThings = [
       'HTML5 Boilerplate',
       'AngularJS',

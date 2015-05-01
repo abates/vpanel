@@ -11,31 +11,31 @@ angular.module('virtPanel', ['ngAnimate', 'ngResource', 'ngRoute', 'mgcrea.ngStr
     $routeProvider
       .when('/', {
         templateUrl: 'views/host.html',
-        controller: 'HostCtrl'
+        controller: 'HostController'
       })
       .when('/container/:containerId', {
         templateUrl: 'views/container.html',
-        controller: 'ContainerCtrl'
+        controller: 'ContainerController'
       })
       .when('/networking', {
         templateUrl: 'views/networking.html',
-        controller: 'NetworkingCtrl'
+        controller: 'NetworkingController'
       })
       .when('/tokens', {
         templateUrl: 'views/tokens.html',
-        controller: 'TokensCtrl'
+        controller: 'TokensController'
       })
       .when('/audit', {
         templateUrl: 'views/about.html',
-        controller: 'AuditCtrl'
+        controller: 'AuditController'
       })
       .when('/users', {
         templateUrl: 'views/users.html',
-        controller: 'UsersCtrl'
+        controller: 'UsersController'
       })
       .when('/about', {
         templateUrl: 'views/about.html',
-        controller: 'AboutCtrl'
+        controller: 'AboutController'
       })
       .otherwise({
         redirectTo: '/'

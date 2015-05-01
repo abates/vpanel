@@ -2,13 +2,13 @@
 
 /**
  * @ngdoc function
- * @name virtPanel.controller:ContainerCtrl
+ * @name virtPanel.controller:ContainerController
  * @description
- * # ContainerCtrl
+ * # ContainerController
  * Controller of the virtPanel
  */
 angular.module('virtPanel')
-  .controller('ContainerCtrl', function ($scope) {
+  .controller('ContainerController', function ($scope) {
     $scope.awesomeThings = [
       'HTML5 Boilerplate',
       'AngularJS',

@@ -2,12 +2,12 @@
 
 /**
  * @ngdoc function
- * @name virtPanel.controller:AlertCtrl
+ * @name virtPanel.controller:AlertController
  * @description
- * # AlertCtrl
+ * # AlertController
  * Controller of the virtPanel
  */
 angular.module('virtPanel')
-  .controller('AlertCtrl', ['$scope', 'alerts', function ($scope, alerts) {
+  .controller('AlertController', ['$scope', 'alerts', function ($scope, alerts) {
     $scope.alerts = alerts;
   }]);

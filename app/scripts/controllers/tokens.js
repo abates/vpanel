@@ -2,13 +2,13 @@
 
 /**
  * @ngdoc function
- * @name virtPanel.controller:TokensCtrl
+ * @name virtPanel.controller:TokensController
  * @description
- * # TokensCtrl
+ * # TokensController
  * Controller of the virtPanel
  */
 angular.module('virtPanel')
-  .controller('TokensCtrl', function ($scope) {
+  .controller('TokensController', function ($scope) {
     $scope.awesomeThings = [
       'HTML5 Boilerplate',
       'AngularJS',

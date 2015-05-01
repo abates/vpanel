@@ -31,14 +31,14 @@
 
 </head>
 
-<body ontouchstart ng-controller="MainCtrl">
+<body ontouchstart ng-controller="MainController">
   <ng-include src="'views/nav.html'"></ng-include>
 
   <div class="container">
     <div class="row">
       <div class="col-md-3 hide-xs"><ng-include src="'views/sidemenu.html'"></ng-include></div>
       <div class="col-md-9">
-        <div ng-controller="AlertCtrl" ng-hide="alerts.empty()">
+        <div ng-controller="AlertController" ng-hide="alerts.empty()">
           <div class="alert" ng-class="alerts.current().classes">
             <button type="button" class="close" aria-label="Close" ng-click="alerts.dismiss()"><span aria-hidden="true">&times;</span></button>
             <strong>{{alerts.current().title}}</strong> {{allerts.current().message}}
