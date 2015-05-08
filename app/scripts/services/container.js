@@ -9,8 +9,11 @@
  */
 angular.module('virtPanel')
   .factory('Container', ['$resource', 'alerts', function ($resource, alerts) {
-    var Container = $resource('containers/:id.json', {}, {
-      query: {method: 'GET', url: 'containers.json', isArray: true}
+    var Container = $resource('/api/containers/:collectionRoute:id', {
+      id: '@id',
+      collectionRoute: '@collectionRoute'
+    }, {
+      templates: { method: 'GET', isArray: true, params: { collectionRoute: 'templates' } }
     });
 
     Container.prototype.start = function() {

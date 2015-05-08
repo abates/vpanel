@@ -9,5 +9,5 @@
  */
 angular.module('virtPanel')
   .factory('Host', [ '$resource', function ($resource) {
-    return $resource('host.json');
+    return $resource('/api/host');
   }]);

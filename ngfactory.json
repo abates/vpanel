@@ -1,6 +1,6 @@
 {
   "type": "application",
-  "name": "VirtPanel",
+  "name": "virtPanel",
   "username": "abates",
   "ngVersion": "~1.4.0",
   "ngModules": [

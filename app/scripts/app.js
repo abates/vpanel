@@ -4,7 +4,12 @@ angular.module('virtPanel', ['ngAnimate', 'ngResource', 'ngRoute', 'mgcrea.ngStr
 
   .constant('version', 'v0.1.0')
 
-  .config(function($locationProvider, $routeProvider) {
+  .config(function($modalProvider, $locationProvider, $routeProvider) {
+
+    angular.extend($modalProvider.defaults, {
+      backdrop: 'static',
+      keyboard: false
+    });
 
     $locationProvider.html5Mode(false);
 

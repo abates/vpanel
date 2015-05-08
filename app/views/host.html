@@ -1,32 +1,32 @@
 <div class="well well-sm">
   <div class="row buttons">
     <div class="col-md-12">
-      <span class="pull-right"><a class="btn btn-sm btn-danger" data-template="views/reboot.html" bs-modal><i class="glyphicon glyphicon-off"></i> Reboot</a></span>
-      <span class="pull-right"><a class="btn btn-sm btn-success" data-template="views/create.html" bs-modal><i class="glyphicon glyphicon-plus-sign"></i> Create <abbr title="Container">CT</abbr></a></span>
+      <span class="pull-right"><a class="btn btn-sm btn-danger" data-template="views/modals/reboot.html" bs-modal><i class="glyphicon glyphicon-off"></i> Reboot</a></span>
+      <span class="pull-right"><a class="btn btn-sm btn-success" data-template="views/modals/create.html" bs-modal><i class="glyphicon glyphicon-plus-sign"></i> Create <abbr title="Container">CT</abbr></a></span>
     </div>
   </div>
 
   <div class="row">
-    <h3 style="margin-left: 10px">{{host.distribution}} ({{host.hostname}})</h3>
+    <h3 style="margin-left: 10px">{{host.hostname}}</h3>
     <div class="col-md-6">
-      <p>CPU usage : {{host.cpu}}%</p>
+      <p>CPU Utilization : {{host.cpu}}%</p>
       <div class="progress">
         <div class="progress-bar" role="progressbar" aria-valuenow="{{host.cpu}}" aria-valuemin="0" aria-valuemax="100" style="width: {{host.cpu}}%">
           <span class="sr-only">{{host.cpu}}%</span>
         </div>
       </div>
-      <p>Memory usage : {{host.memory.usage}}%</p>
+      <p>Memory Utilization : {{host.memory.utilization}}%</p>
       <div class="progress">
-        <div class="progress-bar" role="progressbar" aria-valuenow="{{host.memory.usage}}" aria-valuemin="0" aria-valuemax="100" style="width: {{host.memory.usage}}%">
-          <span class="sr-only">{{host.memory.usage}}%</span>
+        <div class="progress-bar" role="progressbar" aria-valuenow="{{host.memory.utilization}}" aria-valuemin="0" aria-valuemax="100" style="width: {{host.memory.utilization}}%">
+          <span class="sr-only">{{host.memory.utilization}}%</span>
         </div>
       </div>
     </div>
     <div class="col-md-6">
-      <p>Disk usage : {{host.disk.usage}}%</p>
+      <p>Disk Utilization : {{host.disk.utilization}}%</p>
       <div class="progress">
-        <div class="progress-bar" role="progressbar" aria-valuenow="{{host.disk.usage}}" aria-valuemin="0" aria-valuemax="100" style="width: {{host.disk.usage}}%">
-          <span class="sr-only">{{host.disk.usage}}%</span>
+        <div class="progress-bar" role="progressbar" aria-valuenow="{{host.disk.utilization}}" aria-valuemin="0" aria-valuemax="100" style="width: {{host.disk.utilization}}%">
+          <span class="sr-only">{{host.disk.utilization}}%</span>
         </div>
       </div>
       <p>Uptime : {{host.uptime}}</p>
@@ -50,7 +50,7 @@
     <tr class="empty" ng-if="containers.length == 0">
       <td colspan="6">No containers</td>
       <td>
-        <span class="pull-right"><a class="btn btn-xs btn-success" data-template="views/create.html" bs-modal><i class="glyphicon glyphicon-plus-sign"></i> Create <abbr title="Container">CT</abbr></a></span>
+        <span class="pull-right"><a class="btn btn-xs btn-success" data-template="views/modals/create.html" bs-modal><i class="glyphicon glyphicon-plus-sign"></i> Create <abbr title="Container">CT</abbr></a></span>
       </td>
     </tr>
     <tr class="{{container.statClass}}" ng-repeat="container in containers">

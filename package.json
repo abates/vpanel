@@ -26,9 +26,9 @@
     "browser-sync": "^2.6.4",
     "factory-angular-channels": "^0.6",
     "gulp": "git://github.com/gulpjs/gulp.git#4.0",
-    "gulp-symlink": "^2.1.0",
     "ng-factory": "^1.0",
     "portfinder": "^0.4.0",
+    "proxy-middleware": "^0.11.0",
     "undertaker-app-tasks": "^0.2"
   }
 }
