@@ -4,22 +4,42 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strconv"
 	"strings"
+	"time"
 )
 
-type config map[string]string
+type configInterface interface {
+	Set(string, interface{})
+	Get(string, interface{})
+}
+
+type config struct {
+	store map[string]interface{}
+}
 
 var Config config
 
-func getEnv(key, def string) string {
-	v := strings.TrimSpace(os.Getenv(key))
-	if len(v) == 0 {
-		v = def
+type resolver func(string) (interface{}, error)
+
+func getEnv(key, def string, r resolver) interface{} {
+	value := strings.TrimSpace(os.Getenv(key))
+	if len(value) == 0 {
+		value = def
 	}
-	return v
+
+	if r != nil {
+		resolved, err := r(value)
+		if err != nil {
+			Logger.Fatalf("Failed to set %s to value %s: %s", key, value, err.Error())
+		}
+		return resolved
+	}
+	return value
 }
 
-func resolveDir(path string) (string, error) {
+func resolveDir(path string) (interface{}, error) {
 	path, err := filepath.Abs(path)
 	if err != nil {
 		return "", err
@@ -43,7 +63,10 @@ func resolveDir(path string) (string, error) {
 	return path, nil
 }
 
-func dirEntries(path string) ([]string, error) {
+func (c config) dirEntries(key string) ([]string, error) {
+	var path string
+	c.Get(key, &path)
+
 	dir, err := os.Open(path)
 	defer dir.Close()
 	if err != nil {
@@ -53,28 +76,32 @@ func dirEntries(path string) ([]string, error) {
 }
 
 func (c config) ContainerDirEntries() ([]string, error) {
-	return dirEntries(c["containerDir"])
+	return c.dirEntries("containerDir")
 }
 
 func (c config) TemplateDirEntries() ([]string, error) {
-	return dirEntries(c["templateDir"])
+	return c.dirEntries("templateDir")
 }
 
-type resolver func(string) (string, error)
+func (c config) Set(key string, value interface{}) {
+	c.store[key] = value
+}
 
-func (c config) set(k, v string, r resolver) {
-	if r != nil {
-		v, err := r(v)
-		if err != nil {
-			Logger.Fatalf("Failed to set %s to value %s: %s", k, v, err.Error())
-		}
-	}
-	c[k] = v
+func (c config) Get(key string, value interface{}) {
+	r := reflect.ValueOf(value)
+	e := r.Elem()
+	e.Set(reflect.ValueOf(c.store[key]))
+}
+
+func parseDuration(value string) (interface{}, error) {
+	duration, err := strconv.ParseInt(value, 10, 64)
+	return time.Duration(duration), err
 }
 
 func init() {
-	Config = make(config)
-	Config.set("containerDir", getEnv("VP_CONTAINER_DIR", "/var/lib/vpanel"), resolveDir)
-	Config.set("templateDir", getEnv("VP_CONTAINER_DIR", "/usr/share/lxc/templates"), resolveDir)
-	Config.set("listenPort", getEnv("VP_LISTEN_PORT", "3000"), nil)
+	Config.Set("containerDir", getEnv("VP_CONTAINER_DIR", "/var/lib/vpanel", resolveDir))
+	Config.Set("templateDir", getEnv("VP_CONTAINER_DIR", "/usr/share/lxc/templates", resolveDir))
+	Config.Set("listenPort", getEnv("VP_LISTEN_PORT", "3000", nil))
+	Config.Set("hostMonitorInterval", getEnv("VP_HOST_MONITOR_INTERVAL", "60", parseDuration))
+	Config.Set("containerMonitorInterval", getEnv("VP_CONTAINER_MONITOR_INTERVAL", "60", parseDuration))
 }

@@ -1,86 +1,31 @@
 package main
 
 import (
-	"bytes"
 	"github.com/abates/vpanel"
-	"github.com/labstack/echo"
+	"log"
 	"net/http"
-	"path/filepath"
 	"time"
 )
 
-func serveFile(c *echo.Context) {
-	path := c.Request.URL.Path
-	if len(path) > 1 {
-		path = path[1:len(path)]
-	}
+func Logger(inner http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
 
-	data, err := vpanel.Asset(path)
-	if err != nil {
-		http.NotFound(c.Response, c.Request)
-		return
-	}
-	reader := bytes.NewReader(data)
-	http.ServeContent(c.Response, c.Request, filepath.Base(path), time.Now(), reader)
-}
+		inner.ServeHTTP(w, r)
 
-type errorInfo struct {
-	Message string `json:"message"`
-}
-
-func renderJSON(c *echo.Context, data interface{}, err error) error {
-	if err != nil {
-		return err
-	}
-	return c.JSON(http.StatusOK, data)
-}
-
-func bindAndValidate(c *echo.Context, receiver vpanel.Validatable) error {
-	if err := c.Bind(receiver); err != nil {
-		return err
-	}
-	return receiver.Validate()
+		log.Printf(
+			"%s\t%s\t%s",
+			r.Method,
+			r.RequestURI,
+			time.Since(start),
+		)
+	})
 }
 
 func main() {
-	e := echo.New()
-
-	e.Get("/", func(c *echo.Context) {
-		c.Request.URL.Path = "/index.html"
-		serveFile(c)
-	})
-	e.Get("/*", serveFile)
-
-	a := e.Group("/api")
-
-	a.Get("/host", func(c *echo.Context) error {
-		data, err := vpanel.Host.Stats()
-		return renderJSON(c, data, err)
-	})
-
-	a.Get("/containers/templates", func(c *echo.Context) error {
-		data, err := vpanel.Containers.Templates()
-		return renderJSON(c, data, err)
-	})
-
-	a.Get("/containers", func(c *echo.Context) error {
-		data, err := vpanel.Containers.All()
-		return renderJSON(c, data, err)
-	})
-
-	a.Post("/containers", func(c *echo.Context) error {
-		metadata := vpanel.NewContainerMetadata()
-		if err := bindAndValidate(c, metadata); err != nil {
-			return err
-		}
-		container, err := vpanel.Containers.Create(metadata)
-		return renderJSON(c, container, err)
-	})
-
-	a.HTTPErrorHandler(func(code int, err error, c *echo.Context) {
-		vpanel.Logger.Warnf("Failed to process %s %s: %s", c.Request.Method, c.Request.URL.Path, err.Error())
-		http.Error(c.Response, err.Error(), code)
-	})
-
-	e.Run(":" + vpanel.Config["listenPort"])
+	manager := vpanel.NewManager()
+	manager.Start()
+	defer manager.Stop()
+	router := NewRouter(manager)
+	log.Fatal(http.ListenAndServe(":8080", Logger(router)))
 }
