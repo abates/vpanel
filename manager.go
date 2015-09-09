@@ -2,14 +2,18 @@ package vpanel
 
 import (
 	"code.google.com/p/go-uuid/uuid"
-	"errors"
+	"fmt"
 	"strings"
+	"sync"
 )
 
+type ContainerNotFoundError error
+type DuplicateContainerIdError error
+
 type Manager struct {
-	stopCh      chan bool
-	containerCh chan *Container
-	containers  map[string]*Container
+	stopCh          chan bool
+	containersMutex sync.RWMutex
+	containers      map[string]*Container
 }
 
 func ContainerTemplates() ([]string, error) {
@@ -24,54 +28,59 @@ func (m *Manager) CreateContainer(metadata ContainerMetadata) error {
 	if metadata.IsValid(); metadata.Err != nil {
 		return metadata.Err
 	}
-	container, err := newContainer(metadata, m)
+	container, err := newContainer(metadata)
 	if err == nil {
 		metadata.save()
-		container.Create()
-		m.containerCh <- container
+		err = container.Create()
+		if err == nil {
+			err = m.AddContainer(container)
+		}
 	}
 	return err
 }
 
-func (m *Manager) getContainer(id string, f func(*Container)) error {
-	if container, ok := m.containers[id]; ok {
-		f(container)
+func (m *Manager) AddContainer(container *Container) error {
+	m.containersMutex.Lock()
+	defer m.containersMutex.Unlock()
+	id := container.Metadata.Id.String()
+	if _, found := m.containers[id]; !found {
+		m.containers[id] = container
 		return nil
 	}
-	return errors.New("Container with id " + id + " does not exist")
+	return DuplicateContainerIdError(fmt.Errorf("A container with id %s alredy exists", id))
 }
 
-func (m *Manager) StartContainer(id string) error {
-	return m.getContainer(id, func(container *Container) { container.Start() })
-}
-
-func (m *Manager) StopContainer(id string) error {
-	return m.getContainer(id, func(container *Container) { container.Stop() })
-}
-
-func (m *Manager) FreezeContainer(id string) error {
-	return m.getContainer(id, func(container *Container) { container.Freeze() })
-}
-
-func (m *Manager) managerLoop() {
-	for {
-		select {
-		case c := <-m.containerCh:
-			m.containers[c.Metadata.Id.String()] = c
-		case <-m.stopCh:
-			m.stopCh <- true
-			return
-		}
+func (m *Manager) GetContainer(id string) (*Container, error) {
+	m.containersMutex.RLock()
+	defer m.containersMutex.RUnlock()
+	if container, found := m.containers[id]; found {
+		return container, nil
 	}
+	return nil, ContainerNotFoundError(fmt.Errorf("Container %s was not found", id))
 }
 
-func (m *Manager) Start() {
-	go m.managerLoop()
+func (m *Manager) DestroyContainer(id string) error {
+	m.containersMutex.Lock()
+	defer m.containersMutex.Unlock()
+	if container, found := m.containers[id]; found {
+		err := container.destroy()
+		if err == nil {
+			delete(m.containers, id)
+		}
+		return err
+	}
+	return ContainerNotFoundError(fmt.Errorf("Container %s was not found", id))
+}
+
+func NewManager() *Manager {
+	manager := new(Manager)
+	manager.stopCh = make(chan bool)
+	manager.containers = make(map[string]*Container)
 
 	names, err := Config.ContainerDirEntries()
 	if err != nil {
 		Logger.Warnf("Failed to load container directory names: %v", err)
-		return
+		return nil
 	}
 
 	for _, name := range names {
@@ -82,29 +91,18 @@ func (m *Manager) Start() {
 				Logger.Warnf("Failed to load container %s metadata file: %v", name, err)
 				continue
 			} else {
-				container, err := loadContainer(metadata, m)
+				container, err := loadContainer(metadata)
 
 				if err != nil {
 					Logger.Warnf("Failed to load container %s: %v", name, err)
 					continue
 				}
-				m.containerCh <- container
+				manager.AddContainer(container)
 			}
 		} else {
 			Logger.Warnf("Failed to load container %s: The name does not appear to be a UUID", name)
 		}
 	}
-}
 
-func (m *Manager) Stop() {
-	m.stopCh <- true
-	<-m.stopCh
-}
-
-func NewManager() *Manager {
-	manager := new(Manager)
-	manager.stopCh = make(chan bool)
-	manager.containerCh = make(chan *Container)
-	manager.containers = make(map[string]*Container)
 	return manager
 }

@@ -99,6 +99,7 @@ func parseDuration(value string) (interface{}, error) {
 }
 
 func init() {
+	Config.store = make(map[string]interface{})
 	Config.Set("containerDir", getEnv("VP_CONTAINER_DIR", "/var/lib/vpanel", resolveDir))
 	Config.Set("templateDir", getEnv("VP_CONTAINER_DIR", "/usr/share/lxc/templates", resolveDir))
 	Config.Set("listenPort", getEnv("VP_LISTEN_PORT", "3000", nil))

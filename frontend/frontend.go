@@ -22,10 +22,15 @@ func Logger(inner http.Handler) http.Handler {
 	})
 }
 
+var manager *vpanel.Manager
+var monitor *vpanel.HostMonitor
+
 func main() {
-	manager := vpanel.NewManager()
-	manager.Start()
-	defer manager.Stop()
-	router := NewRouter(manager)
+	manager = vpanel.NewManager()
+	monitor = vpanel.NewHostMonitor(manager)
+	monitor.Start()
+	defer monitor.Stop()
+
+	router := NewRouter()
 	log.Fatal(http.ListenAndServe(":8080", Logger(router)))
 }

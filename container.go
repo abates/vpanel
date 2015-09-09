@@ -1,129 +1,24 @@
 package vpanel
 
 import (
-	"code.google.com/p/go-uuid/uuid"
-	"encoding/json"
-	"errors"
+	"fmt"
 	"github.com/cloudfoundry/gosigar"
 	"gopkg.in/lxc/go-lxc.v2"
 	"net"
-	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
-type ContainerState string
-
-var (
-	ContainerError    = ContainerState("Error")
-	ContainerCreating = ContainerState("Creating")
-	ContainerStopping = ContainerState("Stopping")
-	ContainerStopped  = ContainerState("Stopped")
-	ContainerStarting = ContainerState("Starting")
-	ContainerRunning  = ContainerState("Running")
-	ContainerFreezing = ContainerState("Freezing")
-	ContainerFrozen   = ContainerState("Frozen")
-)
-
-type Action int
-
-const (
-	ActionCreate Action = iota
-	ActionStart
-	ActionStop
-	ActionFreeze
-)
-
-type ContainerMetadata struct {
-	Id          uuid.UUID      `json:"id"`
-	Name        string         `json:"name"`
-	Hostname    string         `json:"hostname"`
-	IPAddresses []net.IP       `json:"ip"`
-	Template    string         `json:"template"`
-	AutoStart   bool           `json:"autostart"`
-	State       ContainerState `json:"state"`
-	Err         error          `json:"-"`
+type Action struct {
+	respCh chan error
 }
 
-func (c *ContainerMetadata) Validate(expression bool, err error) {
-	if c.Err != nil {
-		return
-	} else if !expression {
-		c.Err = err
-	}
-}
-
-func (c *ContainerMetadata) ValidateName() {
-	c.Validate(len(c.Name) > 0, errors.New("Name cannot be an empty string"))
-}
-
-func (c *ContainerMetadata) ValidateHostname() {
-	c.Validate(len(c.Hostname) > 0, errors.New("Hostname cannot be an empty string"))
-
-	/* TODO: make sure this is working for unicode code points instead of byte length */
-	for _, part := range strings.Split(c.Hostname, ".") {
-		c.Validate(len(part) < 64, errors.New("Hostname label "+part+" is greater than 63 characters"))
-	}
-
-	c.Validate(len(c.Hostname) < 254, errors.New("Hostname cannot be more than 253 characters"))
-}
-
-func (c *ContainerMetadata) ValidateTemplate() {
-	templates, err := ContainerTemplates()
-	c.Validate(err != nil, err)
-
-	found := false
-	for _, template := range templates {
-		if c.Template == template {
-			found = true
-			break
-		}
-	}
-	c.Validate(found, errors.New(c.Template+" is not a valid template"))
-}
-
-func (c *ContainerMetadata) IsValid() bool {
-	c.ValidateName()
-	c.ValidateHostname()
-	c.ValidateTemplate()
-	return c.Err == nil
-}
-
-func (c ContainerMetadata) save() error {
-	if c.IsValid(); c.Err != nil {
-		return c.Err
-	}
-	var containerDir string
-	Config.Get("containerDir", &containerDir)
-	file, err := os.OpenFile(containerDir+"/"+c.Id.String()+"/config.json", os.O_CREATE, 0600)
-	if err != nil {
-		return err
-	}
-	enc := json.NewEncoder(file)
-	return enc.Encode(&c)
-}
-
-func NewContainerMetadata() ContainerMetadata {
-	c := ContainerMetadata{
-		Id: uuid.NewRandom(),
-	}
-	return c
-}
-
-func loadMetadata(id uuid.UUID) (ContainerMetadata, error) {
-	metadata := ContainerMetadata{}
-	var containerDir string
-	Config.Get("containerDir", &containerDir)
-	file, err := os.Open(containerDir + "/" + id.String() + "/config.json")
-	if err == nil {
-		dec := json.NewDecoder(file)
-		err = dec.Decode(&metadata)
-	}
-
-	return metadata, err
-}
+type CreateAction Action
+type StartAction Action
+type StopAction Action
+type FreezeAction Action
+type DestroyAction Action
 
 type ContainerStats struct {
 	Cpu       float64     `json:"cpu"`
@@ -135,20 +30,19 @@ type ContainerStats struct {
 type Container struct {
 	lxc       *lxc.Container
 	Metadata  ContainerMetadata
-	manager   *Manager
 	Stats     ContainerStats
 	monitorCh chan chan ContainerStats
-	actionCh  chan Action
-	stateCh   chan ContainerState
+	metaCh    chan chan ContainerMetadata
+	actionCh  chan interface{}
 	stopCh    chan bool
-	err       error
 }
 
-func newContainer(metadata ContainerMetadata, manager *Manager) (*Container, error) {
+type InvalidStateErr error
+
+func newContainer(metadata ContainerMetadata) (*Container, error) {
 	var err error
 	container := Container{
 		Metadata: metadata,
-		manager:  manager,
 	}
 
 	var containerDir string
@@ -158,8 +52,8 @@ func newContainer(metadata ContainerMetadata, manager *Manager) (*Container, err
 	return &container, err
 }
 
-func loadContainer(metadata ContainerMetadata, manager *Manager) (*Container, error) {
-	container, err := newContainer(metadata, manager)
+func loadContainer(metadata ContainerMetadata) (*Container, error) {
+	container, err := newContainer(metadata)
 	if err != nil {
 		Logger.Warnf("Failed to create container: %v", err)
 		return nil, err
@@ -210,30 +104,24 @@ func (c *Container) ConfigItems(key string) []string {
 }
 
 func (c *Container) actionLoop() {
-	var wg sync.WaitGroup
 	for {
 		select {
-		case action := <-c.actionCh:
-			wg.Add(1)
-			go func() {
-				switch action {
-				case ActionCreate:
-					c.create()
-				case ActionStart:
-					c.start()
-				case ActionStop:
-					c.stop()
-				case ActionFreeze:
-					c.freeze()
-				default:
-					Logger.Warnf("Don't know how to handle action %v", action)
-				}
-				wg.Done()
-			}()
-		case state := <-c.stateCh:
-			c.updateState(state)
+		case i := <-c.actionCh:
+			switch action := i.(type) {
+			case CreateAction:
+				action.respCh <- c.create()
+			case StartAction:
+				c.start()
+			case StopAction:
+				c.stop()
+			case FreezeAction:
+				c.freeze()
+			case DestroyAction:
+				c.destroy()
+			default:
+				Logger.Warnf("Don't know how to handle action %v", action)
+			}
 		case <-c.stopCh:
-			wg.Wait()
 			c.stopCh <- true
 			return
 		}
@@ -254,8 +142,24 @@ func (c *Container) monitorLoop(interval time.Duration) {
 			c.Stats.procCpu = procCpu["user"] + procCpu["system"]
 			delta := c.Stats.systemCpu.Delta(oldSystemCpu)
 			c.Stats.Cpu = utilize(uint64(c.Stats.procCpu), (&delta).Total())
+			switch c.lxc.State() {
+			case lxc.STOPPED:
+				c.Metadata.State = ContainerStopped
+			case lxc.STARTING:
+				c.Metadata.State = ContainerStarting
+			case lxc.STOPPING:
+				c.Metadata.State = ContainerStopping
+			case lxc.ABORTING:
+			case lxc.FREEZING:
+				c.Metadata.State = ContainerFreezing
+			case lxc.FROZEN:
+				c.Metadata.State = ContainerFrozen
+			case lxc.THAWED:
+			}
 		case respCh := <-c.monitorCh:
 			respCh <- c.Stats
+		case respCh := <-c.metaCh:
+			respCh <- c.Metadata
 		case <-c.stopCh:
 			ticker.Stop()
 			return
@@ -263,71 +167,84 @@ func (c *Container) monitorLoop(interval time.Duration) {
 	}
 }
 
-func (c *Container) updateState(state ContainerState) {
-	Logger.Debugf("Updating container %s state to %v", c.Metadata.Id, state)
-	if c.err == nil {
-		c.Metadata.State = state
-	} else {
-		Logger.Warnf("Failed to update container %s state from %v to %v: %v", c.Metadata.Id, c.Metadata.State, state, c.err)
-		c.Metadata.State = ContainerError
-	}
+func (c *Container) Create() error {
+	action := CreateAction{make(chan error)}
+	c.actionCh <- action
+	return <-action.respCh
 }
 
-func (c *Container) Create() {
-	c.actionCh <- ActionCreate
-}
-
-func (c *Container) create() {
-	c.stateCh <- ContainerCreating
-	c.err = c.lxc.Create(lxc.TemplateOptions{
+func (c *Container) create() error {
+	c.Metadata.State = ContainerCreating
+	return c.lxc.Create(lxc.TemplateOptions{
 		Template: c.Metadata.Template,
 		Backend:  lxc.Directory,
 	})
-	c.stateCh <- ContainerStopped
 }
 
-func (c *Container) Start() {
-	c.actionCh <- ActionStart
+func (c *Container) Start() error {
+	action := StartAction{make(chan error)}
+	c.actionCh <- action
+	return <-action.respCh
 }
 
-func (c *Container) start() {
+func (c *Container) start() (err error) {
 	state := c.lxc.State()
 	if state == lxc.STOPPED || state == lxc.FROZEN {
-		c.stateCh <- ContainerStarting
 		if state == lxc.STOPPED {
-			c.err = c.lxc.Start()
+			err = c.lxc.Start()
 			var interval time.Duration
-			Config.Get("VP_CONTAINER_MONITOR_INTERVAL", &interval)
+			Config.Get("containerMonitorInterval", &interval)
 			go c.monitorLoop(interval)
 		} else if state == lxc.FROZEN {
-			c.err = c.lxc.Unfreeze()
+			err = c.lxc.Unfreeze()
 		}
-		c.stateCh <- ContainerRunning
+	} else {
+		err = InvalidStateErr(fmt.Errorf("cannot start when the container is %s", strings.ToLower(state.String())))
 	}
+	return err
 }
 
-func (c *Container) Stop() {
-	c.actionCh <- ActionStop
+func (c *Container) Stop() error {
+	action := StopAction{make(chan error)}
+	c.actionCh <- action
+	return <-action.respCh
 }
 
-func (c *Container) stop() {
+func (c *Container) stop() error {
 	if c.lxc.Running() {
-		c.stateCh <- ContainerStopping
-		c.err = c.lxc.Stop()
+		err := c.lxc.Stop()
 		c.stopCh <- true
-		c.stateCh <- ContainerStopped
+		return err
 	}
+
+	return InvalidStateErr(fmt.Errorf("cannot stop then container unless it is running"))
 }
 
-func (c *Container) Freeze() {
-	c.actionCh <- ActionFreeze
+func (c *Container) Freeze() error {
+	action := FreezeAction{make(chan error)}
+	c.actionCh <- action
+	return <-action.respCh
 }
 
-func (c *Container) freeze() {
+func (c *Container) freeze() error {
 	if c.lxc.Running() {
-		c.stateCh <- ContainerFreezing
-		c.err = c.lxc.Freeze()
+		err := c.lxc.Freeze()
 		c.stopCh <- true
-		c.stateCh <- ContainerFrozen
+		return err
 	}
+	return InvalidStateErr(fmt.Errorf("cannot freeze the container unless it is running"))
+}
+
+func (c *Container) Destroy() error {
+	action := DestroyAction{make(chan error)}
+	c.actionCh <- action
+	return <-action.respCh
+}
+
+func (c *Container) destroy() error {
+	if c.lxc.Running() {
+		return InvalidStateErr(fmt.Errorf("cannot destroy a running container!"))
+	}
+	c.stopCh <- true
+	return nil
 }

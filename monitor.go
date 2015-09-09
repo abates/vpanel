@@ -29,13 +29,16 @@ type HostStats struct {
 }
 
 type HostMonitor struct {
-	interval  time.Duration
-	stopCh    chan bool
-	manager   *Manager
-	HostStats HostStats
+	interval time.Duration
+	readCh   chan chan HostStats
+	stopCh   chan bool
+	manager  *Manager
+	stats    *HostStats
 }
 
-func NewHostMonitor(m *Manager, interval time.Duration) *HostMonitor {
+func NewHostMonitor(m *Manager) *HostMonitor {
+	var interval time.Duration
+	Config.Get("hostMonitorInterval", &interval)
 	monitor := HostMonitor{
 		interval: interval,
 		manager:  m,
@@ -68,6 +71,12 @@ func humanize(value uint64) string {
 	}
 }
 
+func (m *HostMonitor) HostStats() HostStats {
+	ch := make(chan HostStats)
+	m.readCh <- ch
+	return <-ch
+}
+
 func (m *HostMonitor) monitorLoop() {
 	cpu := sigar.Cpu{}
 	cpu.Get()
@@ -89,26 +98,25 @@ func (m *HostMonitor) monitorLoop() {
 			uptime.Get()
 			fslist.Get()
 
-			hostStats := HostStats{}
-			hostStats.Hostname, _ = os.Hostname()
-			hostStats.Cpu = utilize(deltaCpu.Total()-deltaCpu.Idle, deltaCpu.Total())
-			hostStats.Memory.Free = humanize(memory.Free)
-			hostStats.Memory.Total = humanize(memory.Total)
-			hostStats.Memory.Utilization = utilize(memory.Total-memory.Free, memory.Total)
-			hostStats.Uptime = uptime.Format()
+			m.stats.Hostname, _ = os.Hostname()
+			m.stats.Cpu = utilize(deltaCpu.Total()-deltaCpu.Idle, deltaCpu.Total())
+			m.stats.Memory.Free = humanize(memory.Free)
+			m.stats.Memory.Total = humanize(memory.Total)
+			m.stats.Memory.Utilization = utilize(memory.Total-memory.Free, memory.Total)
+			m.stats.Uptime = uptime.Format()
 
-			hostStats.Disk = make(map[string]DiskStats)
+			m.stats.Disk = make(map[string]DiskStats)
 			for _, fs := range fslist.List {
 				usage := sigar.FileSystemUsage{}
 				usage.Get(fs.DirName)
-				hostStats.Disk[fs.DirName] = DiskStats{
+				m.stats.Disk[fs.DirName] = DiskStats{
 					Utilization: utilize(usage.Total-usage.Free, usage.Total),
 					Free:        fmt.Sprintf("%d", usage.Free),
 					Total:       fmt.Sprintf("%d", usage.Total),
 				}
 			}
-
-			m.HostStats = hostStats
+		case ch := <-m.readCh:
+			ch <- *m.stats
 		case <-m.stopCh:
 			ticker.Stop()
 			m.stopCh <- true
@@ -118,7 +126,9 @@ func (m *HostMonitor) monitorLoop() {
 }
 
 func (m *HostMonitor) Start() {
+	m.stats = new(HostStats)
 	m.stopCh = make(chan bool)
+	m.readCh = make(chan chan HostStats)
 	go m.monitorLoop()
 }
 
